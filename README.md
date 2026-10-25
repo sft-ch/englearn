@@ -1,8 +1,6 @@
 # Englearn · 本地英语精读助手
 
-<!-- 发布到 GitHub 后，把下面的 OWNER/REPO 换成你的仓库，再取消注释 -->
-<!-- [![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml) -->
-
+[![CI](https://github.com/sft-ch/englearn/actions/workflows/ci.yml/badge.svg)](https://github.com/sft-ch/englearn/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](requirements.txt)
