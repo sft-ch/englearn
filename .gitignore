@@ -1,0 +1,12 @@
+config.json
+config/
+data/
+exports/
+logs/
+__pycache__/
+*.pyc
+docs/.demo-data/
+docs/.chrome-profile/
+docs/preview/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,41 @@
+# Englearn 容器编排（网页模式）
+#
+# 启动：docker compose up -d
+# 查看：http://127.0.0.1:8765
+# 停止：docker compose down
+#
+# 端口只绑定到宿主机 127.0.0.1，避免把无鉴权的服务暴露到局域网。
+
+services:
+  englearn:
+    build: .
+    image: englearn:0.1.0
+    container_name: englearn
+    command:
+      - python
+      - app.py
+      - --host
+      - 0.0.0.0
+      - --no-popup
+      - --no-hotkey
+      - --no-open
+    ports:
+      # 只绑宿主机回环；想换端口用 ENGL_PORT=8899 docker compose up -d
+      - "127.0.0.1:${ENGL_PORT:-8765}:8765"
+    volumes:
+      - ./data:/app/data
+      - ./exports:/app/exports
+      - ./config:/app/config
+    environment:
+      ENGL_CONFIG: /app/config/config.json
+      ENGL_DATA_DIR: /app/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

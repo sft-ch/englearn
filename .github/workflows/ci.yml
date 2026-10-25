@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    name: Smoke test · ${{ matrix.os }} · py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Syntax check
+        run: python -m compileall -q app.py core
+
+      - name: Smoke test
+        run: python scripts/selftest.py
+
+  docker:
+    name: Docker build & run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose file
+        run: docker compose config --quiet
+
+      - name: Build image
+        run: docker build -t englearn:ci .
+
+      - name: Run container in mock mode and probe health
+        run: |
+          docker run -d --name englearn-ci -p 127.0.0.1:8765:8765 \
+            englearn:ci python app.py --host 0.0.0.0 \
+            --no-popup --no-hotkey --no-open --mock
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8765/api/health > /tmp/health.json; then break; fi
+            sleep 1
+          done
+          cat /tmp/health.json
+          grep -q '"ok": true' /tmp/health.json
+          docker logs englearn-ci | tail -n 20
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f englearn-ci || true

@@ -1,0 +1,7 @@
+# Englearn 运行时**不需要**任何第三方依赖。
+#
+# 全部功能只使用 Python 标准库：
+#   http.server / sqlite3 / urllib / json / tkinter(Windows 悬浮窗) / ctypes
+#
+# 只要本机有 Python 3.10+ 即可运行，不需要执行 pip install。
+# 因此本文件故意留空；开发与文档生成的依赖见 requirements-dev.txt。

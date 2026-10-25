@@ -1,0 +1,6 @@
+# 仅开发/文档用途，普通使用者不需要安装。
+# pip install -r requirements-dev.txt
+
+Pillow>=10.0.0        # scripts/shoot*.py 截图、文档配图裁切
+pymupdf>=1.24.0       # scripts/build_docx.py 之后的 PDF 预览校验
+python-docx>=1.1.0    # scripts/build_docx.py 生成教程 DOCX

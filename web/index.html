@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Englearn · 本地英语精读助手</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">E</div>
+    <div class="brand-text">
+      <h1>Englearn</h1>
+      <p>划词翻译 · 长难句拆解 · 生词沉淀</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="status-pill" class="pill">检查中…</span>
+    <div class="menu-wrap">
+      <button id="btn-export" class="btn ghost">导出 ▾</button>
+      <div id="export-menu" class="menu hidden">
+        <button data-format="md">Markdown（.md）</button>
+        <button data-format="json">JSON 备份</button>
+        <button data-format="csv">CSV 表格</button>
+        <button data-format="anki">Anki 卡片（.txt）</button>
+        <button data-format="html">HTML 页面</button>
+      </div>
+    </div>
+    <button id="btn-settings" class="btn ghost">设置</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="col-left">
+    <div class="card composer">
+      <div class="composer-head">
+        <span class="hint">选中英文后按 <kbd id="kbd-hotkey">Alt+D</kbd>，也可直接粘贴</span>
+        <select id="mode" class="select">
+          <option value="auto">自动识别</option>
+          <option value="word">单词</option>
+          <option value="phrase">短语</option>
+          <option value="sentence">句子</option>
+        </select>
+      </div>
+      <textarea id="input" spellcheck="false"
+        placeholder="粘贴英文单词、句子或整段文章…&#10;&#10;例如：The committee, having reviewed the proposal at length, concluded that the measures, however well-intentioned, were unlikely to yield results."></textarea>
+      <div class="composer-foot">
+        <span id="counter" class="muted">0 字符</span>
+        <div class="actions">
+          <button id="btn-capture" class="btn ghost" title="读取当前剪贴板被选中的文本">取选区</button>
+          <button id="btn-analyze" class="btn primary">分析 <kbd>Ctrl</kbd>+<kbd>Enter</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="detail-bar" class="detail-bar hidden">
+      <button id="btn-back" class="btn ghost tiny">← 返回</button>
+      <span id="detail-title" class="detail-title"></span>
+    </div>
+
+    <div id="result" class="card result">
+      <div class="placeholder">
+        <div class="ph-icon">Aa</div>
+        <p>还没有分析结果</p>
+        <p class="muted">在任意软件里选中英文 → 按热键，结果会推送到这里</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="col-right card">
+    <div class="tabs">
+      <button class="tab active" data-tab="words">生词 <span id="cnt-words" class="count">0</span></button>
+      <button class="tab" data-tab="sentences">长难句 <span id="cnt-sentences" class="count">0</span></button>
+      <button class="tab" data-tab="history">历史 <span id="cnt-history" class="count">0</span></button>
+      <button class="tab" data-tab="day">日历</button>
+    </div>
+    <div class="search-row">
+      <input id="search" placeholder="搜索单词 / 释义 / 原文…">
+    </div>
+    <div id="list" class="list"></div>
+  </aside>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>设置</h2>
+      <button id="btn-close" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field">
+        <span>API Key</span>
+        <input id="cfg-key" type="password" autocomplete="off" placeholder="sk-…（留空表示不修改）">
+      </label>
+      <label class="field">
+        <span>Base URL</span>
+        <input id="cfg-base" type="text" placeholder="https://api.deepseek.com">
+      </label>
+      <label class="field">
+        <span>模型</span>
+        <input id="cfg-model" type="text" placeholder="deepseek-chat">
+      </label>
+      <label class="field">
+        <span>取词热键</span>
+        <input id="cfg-hotkey" type="text" placeholder="alt+d">
+        <small>格式如 alt+d / ctrl+shift+t，修改后需重启生效</small>
+      </label>
+      <label class="check">
+        <input id="cfg-watch" type="checkbox">
+        <span>监听剪贴板（手动 Ctrl+C 也触发分析）</span>
+      </label>
+      <label class="check">
+        <input id="cfg-mock" type="checkbox">
+        <span>Mock 演示模式（不调用模型，用示例数据）</span>
+      </label>
+      <label class="check">
+        <input id="cfg-autostart" type="checkbox">
+        <span>开机自动启动（后台运行，登录后自动打开页面）</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <span id="cfg-hint" class="muted"></span>
+      <button id="btn-save" class="btn primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "host": "127.0.0.1",
+  "port": 8765,
+  "hotkey": "alt+d",
+  "clipboard_watch": false,
+  "select_popup": true,
+  "max_chars": 4000,
+  "mock": false,
+  "llm": {
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "api_key": "",
+    "timeout": 60,
+    "temperature": 0.2
+  }
+}

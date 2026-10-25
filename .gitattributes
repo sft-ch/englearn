@@ -1,0 +1,16 @@
+# 统一换行符，避免跨平台 checkout 破坏脚本
+* text=auto eol=lf
+
+# Windows 批处理必须是 CRLF，否则 cmd.exe 会解析错乱
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.vbs text eol=crlf
+
+# 二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.docx binary
+*.ico binary
