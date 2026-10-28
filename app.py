@@ -307,10 +307,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._ok(config=view)
                 return
             if path == "/api/words":
-                self._ok(words=self.app.store.words(
-                    q=(qs.get("q") or [""])[0],
-                    status=(qs.get("status") or [""])[0],
-                ))
+                self._ok(
+                    words=self.app.store.words(
+                        q=(qs.get("q") or [""])[0],
+                        status=(qs.get("status") or [""])[0],
+                        kind=(qs.get("kind") or [""])[0],
+                    ),
+                    kinds=self.app.store.word_kind_counts(),
+                )
                 return
             if path == "/api/history":
                 limit = int((qs.get("limit") or ["60"])[0])

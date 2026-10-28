@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_records_ts ON records(ts DESC);
 CREATE TABLE IF NOT EXISTS words (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     lemma      TEXT NOT NULL UNIQUE,
+    kind       TEXT DEFAULT '',
     phonetic   TEXT DEFAULT '',
     pos        TEXT DEFAULT '',
     meaning    TEXT DEFAULT '',
@@ -64,10 +65,30 @@ class Store:
         self._migrate()
 
     def _migrate(self) -> None:
-        """老库补列：marks 是后加的。"""
+        """老库补列并回填分类。"""
         cols = {row["name"] for row in self._rows("PRAGMA table_info(sentences)")}
         if "marks" not in cols:
             self._exec("ALTER TABLE sentences ADD COLUMN marks TEXT DEFAULT '[]'")
+
+        wcols = {row["name"] for row in self._rows("PRAGMA table_info(words)")}
+        if "kind" not in wcols:
+            # 用空默认值，让下面的回填把历史条目也归类
+            self._exec("ALTER TABLE words ADD COLUMN kind TEXT DEFAULT ''")
+        self._backfill_kind()
+
+    def _backfill_kind(self) -> None:
+        """把没有分类（或分类为空）的条目按语言单位补上，不覆盖已有分类。"""
+        from .units import classify_unit
+
+        rows = self._rows("SELECT id, lemma, kind FROM words")
+        for row in rows:
+            kind = (row.get("kind") or "").strip()
+            if kind in ("word", "phrase", "sentence"):
+                continue
+            self._exec(
+                "UPDATE words SET kind = ? WHERE id = ?",
+                (classify_unit(row["lemma"]), row["id"]),
+            )
 
     # ---------- 内部 ----------
     def _rows(self, sql: str, args: tuple = ()) -> list[dict]:
@@ -144,41 +165,59 @@ class Store:
                 example = f"{example}  —— {zh}"
 
         phonetic = payload.get("phonetic") or ""
+        from .units import classify_unit
+
+        kind = payload.get("type")
+        if kind not in ("word", "phrase", "sentence"):
+            kind = classify_unit(lemma)
         now = _now()
         existing = self._one("SELECT * FROM words WHERE lemma = ?", (lemma,))
         if existing:
             self._exec(
-                "UPDATE words SET cnt = cnt + 1, last_seen = ?, "
+                "UPDATE words SET cnt = cnt + 1, last_seen = ?, kind = ?, "
                 "phonetic = COALESCE(NULLIF(?, ''), phonetic), "
                 "pos = COALESCE(NULLIF(?, ''), pos), "
                 "meaning = COALESCE(NULLIF(?, ''), meaning), "
                 "example = COALESCE(NULLIF(?, ''), example), "
                 "source = COALESCE(NULLIF(?, ''), source) "
                 "WHERE id = ?",
-                (now, phonetic, pos, meaning, example, source, existing["id"]),
+                (now, kind, phonetic, pos, meaning, example, source, existing["id"]),
             )
             row_id = existing["id"]
         else:
             cur = self._exec(
-                "INSERT INTO words (lemma, phonetic, pos, meaning, example, source, first_seen, last_seen) "
-                "VALUES (?,?,?,?,?,?,?,?)",
-                (lemma, phonetic, pos, meaning, example, source, now, now),
+                "INSERT INTO words (lemma, kind, phonetic, pos, meaning, example, source, "
+                "first_seen, last_seen) VALUES (?,?,?,?,?,?,?,?,?)",
+                (lemma, kind, phonetic, pos, meaning, example, source, now, now),
             )
             row_id = cur.lastrowid
         return self._one("SELECT * FROM words WHERE id = ?", (row_id,)) or {}
 
-    def words(self, q: str = "", status: str = "", limit: int = 300) -> list[dict]:
+    def words(self, q: str = "", status: str = "", kind: str = "",
+              limit: int = 300) -> list[dict]:
         sql = "SELECT * FROM words WHERE 1=1"
         args: list = []
         if status in STATUSES:
             sql += " AND status = ?"
             args.append(status)
+        if kind in ("word", "phrase", "sentence"):
+            sql += " AND kind = ?"
+            args.append(kind)
         if q:
             sql += " AND (lemma LIKE ? OR meaning LIKE ?)"
             args.extend([f"%{q}%", f"%{q}%"])
         sql += " ORDER BY last_seen DESC LIMIT ?"
         args.append(max(1, min(int(limit or 300), 1000)))
         return self._rows(sql, tuple(args))
+
+    def word_kind_counts(self) -> dict:
+        rows = self._rows("SELECT kind, COUNT(*) AS n FROM words GROUP BY kind")
+        counts = {"word": 0, "phrase": 0, "sentence": 0}
+        for row in rows:
+            key = row.get("kind") or "word"
+            counts[key] = counts.get(key, 0) + row["n"]
+        counts["all"] = sum(counts[k] for k in ("word", "phrase", "sentence"))
+        return counts
 
     def update_word(self, wid: int, fields: dict) -> dict | None:
         allowed = {}
@@ -303,4 +342,5 @@ class Store:
             "records": records["n"],
             "sentences": sentences["n"],
             "today": today_records["n"],
+            "kinds": self.word_kind_counts(),
         }

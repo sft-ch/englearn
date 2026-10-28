@@ -418,6 +418,20 @@ textarea#input:focus {
 .toast.error { background: #b03a2e; }
 @keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } }
 
+/* ---------- 生词分类 ---------- */
+.kind-filter {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 4px 8px 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.kind-filter .chip-btn { padding: 3px 10px; font-size: 12px; }
+.kind-tag {
+  font-size: 10.5px; line-height: 1.6; padding: 0 6px; border-radius: 4px;
+  background: #eef2f0; color: #5c6b65; flex: none;
+}
+.kind-tag.word { background: #e8f3ff; color: #2f6aa8; }
+.kind-tag.phrase { background: #f2ecff; color: #6a4fa8; }
+.kind-tag.sentence { background: #fff2c2; color: #8a6116; }
+
 /* ---------- 词汇卡片 ---------- */
 .phonetics {
   display: flex; gap: 16px; align-items: center; flex-wrap: wrap;

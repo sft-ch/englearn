@@ -15,6 +15,8 @@ const state = {
   expanded: null,
   current: null,
   query: "",
+  wordKind: "",
+  kindCounts: { all: 0, word: 0, phrase: 0, sentence: 0 },
   busy: false,
 };
 
@@ -22,6 +24,7 @@ const ESC_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ESC_MAP[c]);
 
 const KIND_LABEL = { word: "单词", phrase: "短语", sentence: "句子" };
+const UNIT_LABEL = { word: "单词", phrase: "短语", sentence: "短句" };
 const STATUS_LABEL = { new: "新词", learning: "学习中", known: "已掌握" };
 const STATUS_NEXT = { new: "learning", learning: "known", known: "new" };
 
@@ -431,6 +434,7 @@ async function saveCurrent(kind) {
 async function loadWords() {
   const data = await api("/api/words");
   state.words = data.words || [];
+  state.kindCounts = data.kinds || state.kindCounts;
   renderList();
 }
 
@@ -457,13 +461,27 @@ async function loadDay(date) {
 }
 
 function renderWordItem(w) {
+  const kind = w.kind || "word";
   return `<div class="item" data-word-id="${w.id}" title="点击查看详情">
       <div class="row1">
         <span class="status-dot ${esc(w.status)}"></span>
+        <span class="kind-tag ${esc(kind)}">${UNIT_LABEL[kind] || "单词"}</span>
         <span class="lemma">${esc(w.lemma)}</span>
         <span class="ts" style="margin-left:auto">×${w.cnt}</span>
       </div>
       <div class="meaning">${esc(w.meaning || "—")}</div>
+    </div>`;
+}
+
+function renderKindFilter() {
+  const c = state.kindCounts || {};
+  const item = (key, label) => {
+    const n = key === "" ? c.all || 0 : c[key] || 0;
+    return `<button class="chip-btn ${state.wordKind === key ? "on" : ""}"
+       data-kind="${key}">${label} ${n}</button>`;
+  };
+  return `<div class="kind-filter">
+      ${item("", "全部")}${item("word", "单词")}${item("phrase", "短语")}${item("sentence", "短句")}
     </div>`;
 }
 
@@ -478,7 +496,7 @@ function renderWordPage(w) {
     .join("");
   $("#result").innerHTML = `
     <div class="res-head">
-      <div><span class="badge">生词</span>
+      <div><span class="badge">${UNIT_LABEL[w.kind] || "单词"}</span>
         <span class="badge gray">${STATUS_LABEL[w.status] || w.status}</span></div>
       <span class="muted">出现 ${w.cnt} 次</span>
     </div>
@@ -612,14 +630,19 @@ function renderList() {
   if ($("#cnt-sentences")) $("#cnt-sentences").textContent = state.sentences.length;
 
   if (state.tab === "words") {
-    const rows = state.words.filter(
+    const byKind = state.words.filter((w) => !state.wordKind || (w.kind || "word") === state.wordKind);
+    const rows = byKind.filter(
       (w) => !q || `${w.lemma} ${w.meaning} ${w.note}`.toLowerCase().includes(q)
     );
+    const head = renderKindFilter();
     if (!rows.length) {
-      list.innerHTML = `<div class="empty-hint">${q ? "没有匹配的生词" : "还没有生词<br>分析后点「加入生词本」"}</div>`;
+      list.innerHTML = head + `<div class="empty-hint">${
+        q ? "没有匹配的条目" : "这一类还没有条目"
+      }</div>`;
+      bindListEvents();
       return;
     }
-    list.innerHTML = rows.map(renderWordItem).join("");
+    list.innerHTML = head + rows.map(renderWordItem).join("");
   } else if (state.tab === "sentences") {
     const rows = state.sentences.filter(
       (s) => !q || `${s.text} ${s.translation}`.toLowerCase().includes(q)
@@ -654,6 +677,14 @@ function renderList() {
 }
 
 function bindListEvents() {
+  // 分类筛选：全部 / 单词 / 短语 / 短句
+  $$("[data-kind]", $("#list")).forEach((btn) => {
+    btn.onclick = () => {
+      state.wordKind = btn.dataset.kind || "";
+      renderList();
+    };
+  });
+
   // 生词：点击后在左侧整页展示详情
   $$("[data-word-id]", $("#list")).forEach((el) => {
     el.onclick = () => {

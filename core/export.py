@@ -9,6 +9,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from .units import KIND_LABEL
+
 EXPORT_DIR = Path(__file__).resolve().parent.parent / "exports"
 
 STATUS_LABEL = {"new": "新词", "learning": "学习中", "known": "已掌握"}
@@ -48,15 +50,27 @@ def build_markdown(store) -> str:
 
     lines += ["## 一、生词本", ""]
     if words:
-        lines += ["| 单词 | 音标 | 词性 | 释义 | 次数 | 状态 | 最近出现 |",
-                  "| --- | --- | --- | --- | --- | --- | --- |"]
-        for w in words:
-            lines.append(
-                f"| {_cell(w['lemma'])} | {_cell(w['phonetic'])} | {_cell(w['pos'])} | "
-                f"{_cell(w['meaning'])} | {w['cnt']} | "
-                f"{STATUS_LABEL.get(w['status'], w['status'])} | {_cell(w['last_seen'])} |"
-            )
-        lines += ["", "### 生词详情", ""]
+        counts = store.word_kind_counts()
+        lines += [
+            f"> 共 {counts['all']} 条：单词 {counts['word']} · 短语 {counts['phrase']}"
+            f" · 短句 {counts['sentence']}",
+            "",
+        ]
+        for key, label in (("word", "单词"), ("phrase", "短语"), ("sentence", "短句")):
+            group = [w for w in words if (w.get("kind") or "word") == key]
+            if not group:
+                continue
+            lines += [f"### {label}（{len(group)} 条）", ""]
+            lines += ["| 条目 | 音标 | 词性 | 释义 | 次数 | 状态 | 最近出现 |",
+                      "| --- | --- | --- | --- | --- | --- | --- |"]
+            for w in group:
+                lines.append(
+                    f"| {_cell(w['lemma'])} | {_cell(w['phonetic'])} | {_cell(w['pos'])} | "
+                    f"{_cell(w['meaning'])} | {w['cnt']} | "
+                    f"{STATUS_LABEL.get(w['status'], w['status'])} | {_cell(w['last_seen'])} |"
+                )
+            lines.append("")
+        lines += ["### 条目详情", ""]
         for idx, w in enumerate(words, 1):
             head = f"**{idx}. {w['lemma']}**"
             if w["phonetic"]:
@@ -153,10 +167,11 @@ def build_json(store) -> str:
 def build_csv(store) -> str:
     buf = io.StringIO()
     writer = csv.writer(buf, lineterminator="\n")
-    writer.writerow(["单词", "音标", "词性", "释义", "例句", "状态", "备注", "标签",
+    writer.writerow(["类别", "单词", "音标", "词性", "释义", "例句", "状态", "备注", "标签",
                      "次数", "首次", "最近"])
     for w in store.words(limit=2000):
-        writer.writerow([w["lemma"], w["phonetic"], w["pos"], w["meaning"], w["example"],
+        writer.writerow([KIND_LABEL.get(w.get("kind"), "单词"),
+                         w["lemma"], w["phonetic"], w["pos"], w["meaning"], w["example"],
                          STATUS_LABEL.get(w["status"], w["status"]), w["note"], w["tags"],
                          w["cnt"], w["first_seen"], w["last_seen"]])
     return buf.getvalue()
@@ -180,11 +195,12 @@ def build_html(store) -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     word_rows = "".join(
-        f"<tr><td>{html.escape(w['lemma'])}</td><td>{html.escape(w['phonetic'] or '')}</td>"
+        f"<tr><td>{KIND_LABEL.get(w.get('kind'), '单词')}</td>"
+        f"<td>{html.escape(w['lemma'])}</td><td>{html.escape(w['phonetic'] or '')}</td>"
         f"<td>{html.escape(w['meaning'] or '')}</td>"
         f"<td>{STATUS_LABEL.get(w['status'], w['status'])}</td><td>{w['cnt']}</td></tr>"
         for w in words
-    ) or "<tr><td colspan='5'>暂无生词</td></tr>"
+    ) or "<tr><td colspan='6'>暂无生词</td></tr>"
 
     sent_blocks = []
     for s in sentences:
@@ -226,7 +242,7 @@ th{{background:#f1f5f9}}
 <h1>Englearn 学习导出</h1>
 <p>导出时间：{now}　｜　生词 {len(words)} 个　｜　长难句 {len(sentences)} 句</p>
 <h2>生词本</h2>
-<table><thead><tr><th>单词</th><th>音标</th><th>释义</th><th>状态</th><th>次数</th></tr></thead>
+<table><thead><tr><th>类别</th><th>条目</th><th>音标</th><th>释义</th><th>状态</th><th>次数</th></tr></thead>
 <tbody>{word_rows}</tbody></table>
 <h2>长难句精析</h2>
 {sent_html}

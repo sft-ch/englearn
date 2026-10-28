@@ -101,6 +101,19 @@ def main() -> int:
 
         saved = call(base + "/api/words", {"record_id": word["record"]["id"]})
         checks.append(("save word", saved["word"]["lemma"] == "ubiquitous"))
+        checks.append(("word kind", saved["word"].get("kind") == "word"))
+
+        # 生词分类：短语 / 短句 各自归位
+        phrase = call(base + "/api/analyze", {"text": "copy to clipboard", "mode": "phrase"})
+        per = call(base + "/api/words", {"record_id": phrase["record"]["id"]})
+        short = call(base + "/api/analyze",
+                     {"text": "but it is also incredibly error prone", "mode": "sentence"})
+        ser = call(base + "/api/words", {"record_id": short["record"]["id"]})
+        kinds = call(base + "/api/words?kind=phrase")["kinds"]
+        checks.append(("classify phrase", per["word"].get("kind") == "phrase"))
+        checks.append(("classify sentence", ser["word"].get("kind") == "sentence"))
+        checks.append(("kind counts", kinds["word"] == 1 and kinds["phrase"] == 1
+                       and kinds["sentence"] == 1 and kinds["all"] == 3))
 
         sentence = call(base + "/api/sentences", {"record_id": sent["record"]["id"]})
         sid = sentence["sentence"]["id"]
