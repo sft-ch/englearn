@@ -193,10 +193,10 @@ git restore <file>      # 丢弃某个文件的未提交改动
 
 | 现象 | 处理 |
 | --- | --- |
-| `RPC failed; connection reset` | `git config http.version HTTP/1.1`，重试 |
+| `RPC failed; connection reset` / `Recv failure` | 换 HTTP/2：`git config http.version HTTP/2`；仍失败再试 `HTTP/1.1`，或隔几分钟重试 |
 | `tag already exists` | 换版本号；或 `git tag -d v0.1.0` + `git push origin :refs/tags/v0.1.0`（仅限未发布） |
 | 忘记先拉取，推送被拒 | `git pull --rebase` 后重推 |
-| 每次只改文档也触发完整 CI | 在 workflow 加 `paths-ignore: ['docs/**', '*.md']` |
+| 只改文档也触发了 CI | 已配置 `paths-ignore`（`**.md`、`docs/**`），不会再跑 |
 | 服务没生效 | 后端改动需重启进程；前端刷新即可 |
 
 ---
