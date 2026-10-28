@@ -63,13 +63,14 @@
 python scripts/selftest.py
 ```
 
-它会自己拉起一个 mock 服务，跑完 11 项检查（健康检查、页面、词汇卡片字段、长难句结构、收藏、标记、日历、五种导出）后自动关闭。
+它会自己拉起一个 mock 服务，跑完 15 项检查（健康检查、页面、词汇卡片字段、分类判定、长难句结构、收藏、标记、日历、五种导出）后自动关闭。
 
 ## 文档
 
 | 文档 | 内容 |
 | --- | --- |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | 三种部署方式、配置项、验证清单、故障排查、卸载 |
+| [docs/MAINTAINING.md](docs/MAINTAINING.md) | 日常改动循环、提交规范、分支策略、发版、CI 排错、回滚 |
 | [docs/RELEASE.md](docs/RELEASE.md) | 版本规范、发布流程、许可证说明、CI 建议 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [docs/Englearn-使用教程.pdf](docs/Englearn-使用教程.pdf) | 图文教程（含界面截图） |
